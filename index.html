@@ -15,19 +15,19 @@
       <div class="row mt-4">
         <div class="col-md-8">
           <ul id="todo-list">
-            
+
           </ul>
         </div>
         <div class="col-md-4">
           <form>
             <input type="text" class="form-control" id="todoTitle" placeholder="Todo title...">
             <textarea rows="3" class="form-control mt-3" id="todoDesc" placeholder="Todo description..."></textarea>
+            <input type="date" class="form-control mt-3" id="todoDeadline">
             <button onclick="newTodo()" class="addBtn btn btn-sm btn-primary form-control mt-3">Add</span>
           </form>
           <button onclick="deleteAllTodos()" class="addBtn btn btn-sm btn-danger form-control mt-5">Delete All</span>
         </div>
       </div>
-      
     </div>
 
     <div class="modal" tabindex="-1" role="dialog" id="todoModal">
@@ -40,11 +40,22 @@
             </button>
           </div>
           <div class="modal-body">
-            <p>Title: <span id="todo-title"></span></p>
-            <p>Description: <span id="todo-description"></span></p>
+            <input type="hidden" id="edit-id">
+            <div class="form-group">
+              <label for="edit-title">Title:</label>
+              <input type="text" class="form-control" id="edit-title">
+            </div>
+            <div class="form-group">
+              <label for="edit-description">Description:</label>
+              <textarea class="form-control" id="edit-description" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="edit-deadline">Deadline:</label>
+              <input type="date" class="form-control" id="edit-deadline">
+            </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-primary">Save changes</button>
+            <button type="button" class="btn btn-primary" onclick="saveChanges()">Save changes</button>
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
           </div>
         </div>
@@ -64,7 +75,7 @@
     if (json_data) {
       json_data.forEach(element => {
         if (element) {
-          newTodo(element.title, element.description, element.id);
+          newTodo(element.title, element.description, element.deadline, element.id);
         }
       });
     }
@@ -84,15 +95,16 @@
         link.addEventListener("click", function() {
           var todoID = this.parentNode.getAttribute('data-id');
           var currentTodo = getTodo(todoID);
-          // console.log(currentTodo);
-          document.getElementById("todo-title").innerHTML = currentTodo.title;
-          document.getElementById("todo-description").innerHTML = currentTodo.description;
+          document.getElementById("edit-id").value = todoID;
+          document.getElementById("edit-title").value = currentTodo.title;
+          document.getElementById("edit-description").value = currentTodo.description;
+          document.getElementById("edit-deadline").value = currentTodo.deadline;
         });
       });
     }
 
     function getTodo(id) {
-      var json_temp = JSON.parse( localStorage.getItem('json_data') );
+      var json_temp = JSON.parse( localStorage.getItem('json_data'));
       return json_temp[id];
     }
 
@@ -107,19 +119,18 @@
       localStorage.setItem('json_data', 
         JSON.stringify(json_temp)
       );
-
     }
 
-    function newTodo(todoTitle, todoDesc, todoID) {
+    function newTodo(todoTitle, todoDesc, todoDeadline, todoID) {
       if (!todoTitle && !todoID) {
         todoTitle = document.getElementById("todoTitle").value;
         todoDesc = document.getElementById("todoDesc").value;
+        todoDeadline = document.getElementById("todoDeadline").value;
         if (todoTitle) {
-          var todoID = storeTodoLocal(todoTitle, todoDesc);
+          var todoID = storeTodoLocal(todoTitle, todoDesc, todoDeadline);
         }
       }
       if (todoTitle) {
-        // console.log(todoTitle);
         var todoHTML = '<a href="#" data-toggle="modal" data-target="#todoModal">' + todoTitle + '</a> <a href="#" class="btn btn-sm btn-danger m-1 delete">Delete</a>';
         var todoList = document.getElementById("todo-list");
         var newTodoElement = document.createElement("li");
@@ -130,8 +141,7 @@
       }
     }
 
-    function storeTodoLocal(todoTitle, todoDesc) {
-      
+    function storeTodoLocal(todoTitle, todoDesc, todoDeadline) {
       // retrieve and parse existing JSON from localstorage
       var json_temp = JSON.parse( localStorage.getItem('json_data') );
 
@@ -147,6 +157,7 @@
         "id": todoID,
         "title": todoTitle,
         "description": todoDesc,
+        "deadline": todoDeadline,
         "completed": false
       });
 
@@ -170,6 +181,27 @@
       }
     }
 
-  </script>
+    function saveChanges() {
+      var todoID = document.getElementById("edit-id").value;
+      var newTitle = document.getElementById("edit-title").value
 
+      var json_data = JSON.parse(localStorage.getItem("json_data"));
+      if (!json_data || !json_data[todoID]) return;
+
+      // Set new title, description and deadline
+      json_data[todoID].title = newTitle;
+      json_data[todoID].description = document.getElementById("edit-description").value;
+      json_data[todoID].deadline = document.getElementById("edit-deadline").value;
+
+      localStorage.setItem("json_data", JSON.stringify(json_data));
+
+      var todoItem = document.querySelector("li[data-id='" + todoID + "']");
+      if (todoItem) {
+        todoItem.querySelector("a[data-toggle='modal']").innerHTML = newTitle;
+      }
+
+      // Close modal
+      $('#todoModal').modal('hide');
+    }
+  </script>
 </html>
